@@ -6,11 +6,20 @@ import (
 	"os"
 )
 
-func Config(key string) string {
+func Config(key, fallback string) string {
 	err := godotenv.Load(".env")
-	if err != nil{
+	if err != nil {
 		fmt.Print("Error loading .env file")
 	}
 
-	return os.Getenv(key)
+	return getEnv(key, fallback)
+}
+
+func getEnv(key, fallback string) string {
+	variable := os.Getenv(key)
+	if len(variable) == 0 {
+		return fallback
+	}
+
+	return variable
 }

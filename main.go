@@ -9,7 +9,7 @@ import (
 
 func main() {
 	app := fiber.New()
-	appPort := config.Config("APPLICATION_PORT")
+	appPort := config.Config("APPLICATION_PORT", "8000")
 
 	database.ConnectDB()
 

@@ -23,3 +23,7 @@ func getEnv(key, fallback string) string {
 
 	return variable
 }
+
+func GetSecretKey(key string) string {
+	return Config(key, "stage")
+}

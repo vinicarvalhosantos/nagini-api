@@ -55,7 +55,7 @@ docker-compose up -d
 
 ### Configuração
 
-Lista de variáveis de ambiente necessárias para a execução da aplicação
+Lista de variáveis de ambiente necessárias para a execução da aplicação (Pode ser encontrado um arquivo de exemplo um arquivo chamado env.example na pasta root do seu projeto)
 
 | Variável               | Descrição                             |   Tipo   | Obrigatório |  Valor Padrão   |
 | ---------------------- | ------------------------------------- | :------: | :---------: | :-------------: |
@@ -66,6 +66,14 @@ Lista de variáveis de ambiente necessárias para a execução da aplicação
 | DB_PORT          | Porta para acesso ao Banco            | Numérico |     Não     |      5432       |
 | APPLICATION_PORT          | Porta para acesso a Aplicação            | Numérico |     Não     |      8000       |
 
+### Migrates
+É usado uma biblioteca de migrate para criação das roles defaults (USER, ADMIN e SUPPORT)
+Os migrations se encontram no diretório ```root/db/migrate``` em aquivos ```.sql``` com o padrão de nome ```[<Data em Mili Segundos>_<Nome>]``` ou criar o arquivo por linha de comando:
+``` 'pgmgr migration [\<Nome>]'```
+<br>
+Para executar o migrate basta executar o comando ``` 'pgmgr db migrate'```
+<br>
+É importante lembrar que as credenciais do seu banco de dados esteja configurado no arquivo ```.pgmgr.json``` contendo um arquivo de exemplo chamado ```pgmgr.json.example```
 
 ### Testes
 

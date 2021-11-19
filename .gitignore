@@ -22,4 +22,6 @@
 *.iws
 *.iml
 *.ipr
-
+.pgmgr.json
+*.scannerwork
+*.properties

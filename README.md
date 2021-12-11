@@ -10,6 +10,7 @@ Este projeto está sendo criado com a intenção de estudo e ao mesmo tempo cria
         - [Docker](#docker-compose)
     - [Configuração](#configuração)
     - [Monitor](#Monitor)
+    - [Execução](#Execução)
     - [Testes](#Testes)
 
 ### Catálogo de erros
@@ -63,6 +64,14 @@ Lista de variáveis de ambiente necessárias para a execução da aplicação (P
 Um middleware do Fiber com o objetivo de relatar as métricas de uso do servidor. Essas métricas se encontram por padrão em ```localhost:${APPLICATION_PORT:5000}/dasahboard```
 
 ![Dashboard](docs/images/monitor.gif)
+
+#### Execução:
+
+Para executar o projeto basta rodar o comando:
+```
+make watch
+```
+
 ### Testes
 
 ```bash

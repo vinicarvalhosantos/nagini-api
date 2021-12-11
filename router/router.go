@@ -3,18 +3,17 @@ package router
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"vcsxsantos/nagini-api/pkg/routes/login"
-	"vcsxsantos/nagini-api/pkg/routes/register"
-	roleRoutes "vcsxsantos/nagini-api/pkg/routes/role"
-	userRoutes "vcsxsantos/nagini-api/pkg/routes/user"
+	"github.com/gofiber/fiber/v2/middleware/monitor"
+	v1 "gitlab.com/vinicius.csantos/nagini-api/router/v1"
 )
 
 func SetupRoutes(app *fiber.App) {
-	api := app.Group("/api/v1", logger.New())
 
-	userRoutes.SetupUserRoutes(api)
-	roleRoutes.SetupRoleRoutes(api)
-	login.SetupLoginRoutes(api)
-	register.SetupRegisterRoutes(api)
+	api := app.Group("/api", logger.New())
+
+	//Performance Monitor Route
+	app.Get("/dashboard", monitor.New())
+
+	v1.SetupV1Routes(api)
 
 }

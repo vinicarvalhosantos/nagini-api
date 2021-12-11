@@ -1,23 +1,16 @@
 # Nagini Api
 
-Este projeto está sendo criado com a intenção de estudar e ao mesmo tempo criar uma API para um ecommerce com cenários reais
+Este projeto está sendo criado com a intenção de estudo e ao mesmo tempo criar uma API para um ecommerce com cenários reais
 
 - [Recursos](#recursos)
-    - [Documentação APIs (Em Breve)](#documentação-apis)
+    - [Documentação APIs (Em Breve)](#)
 - [Desenvolvimento](#desenvolvimento)
     - [Requisitos](#requisitos)
     - [Instalação](#instalação)
         - [Docker](#docker-compose)
     - [Configuração](#configuração)
+    - [Monitor](#Monitor)
     - [Testes](#Testes)
-
-### Documentação APIs
-
-Para a documentação do projeto será utilizado o [Swagger](https://swagger.io/). Ferramenta que provê interface para testes.
-
-![swagger](./docs/images/swagger.png)
-
-Por padrão a documentação está disponível no endpoint `/swagger-ui.html#/`.
 
 ### Catálogo de erros
 
@@ -36,7 +29,7 @@ Por padrão a documentação está disponível no endpoint `/swagger-ui.html#/`.
 * Golang
 * Docker
 * Docker Compose
-* PostgreSQL 14
+* MySQL
 
 ```
 
@@ -64,17 +57,12 @@ Lista de variáveis de ambiente necessárias para a execução da aplicação (P
 | DB_PASSWORD      | Senha do usuário para acesso ao banco |  Texto   |     Não     |    nagini-api    |
 | DB_HOST          | Host para acesso ao Banco             |  Texto   |     Não     |    localhost    |
 | DB_PORT          | Porta para acesso ao Banco            | Numérico |     Não     |      5432       |
-| APPLICATION_PORT          | Porta para acesso a Aplicação            | Numérico |     Não     |      8000       |
+| APPLICATION_PORT          | Porta para acesso a Aplicação            | Numérico |     Não     |      5000       |
 
-### Migrates
-É usado uma biblioteca de migrate para criação das roles defaults (USER, ADMIN e SUPPORT)
-Os migrations se encontram no diretório ```root/db/migrate``` em aquivos ```.sql``` com o padrão de nome ```[<Data em Mili Segundos>_<Nome>]``` ou criar o arquivo por linha de comando:
-``` 'pgmgr migration [\<Nome>]'```
-<br>
-Para executar o migrate basta executar o comando ``` 'pgmgr db migrate'```
-<br>
-É importante lembrar que as credenciais do seu banco de dados esteja configurado no arquivo ```.pgmgr.json``` contendo um arquivo de exemplo chamado ```pgmgr.json.example```
+### Monitor
+Um middleware do Fiber com o objetivo de relatar as métricas de uso do servidor. Essas métricas se encontram por padrão em ```localhost:${APPLICATION_PORT:5000}/dasahboard```
 
+![Dashboard](docs/images/monitor.gif)
 ### Testes
 
 ```bash

@@ -2,44 +2,64 @@ package database
 
 import (
 	"fmt"
-	"gorm.io/driver/postgres"
+	"gitlab.com/vinicius.csantos/nagini-api/config"
+	"gitlab.com/vinicius.csantos/nagini-api/internal/model"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
 	"strconv"
-	"vcsxsantos/nagini-api/config"
-	"vcsxsantos/nagini-api/pkg/model"
 )
 
 var DB *gorm.DB
 
-const DB_DEFAULT = "nagini-api"
+const DbDefault = "nagini-api"
 
 func ConnectDB() {
 	var err error
-	portString := config.Config("DB_PORT", "5432")
+	portString := config.Config("DB_PORT", "3306")
 
 	dbPort, err := strconv.ParseUint(portString, 10, 32)
+
+	dbHost := config.Config("DB_HOST", "localhost")
+	dbUser := config.Config("DB_USERNAME", DbDefault)
+	dbPass := config.Config("DB_PASSWORD", DbDefault)
+	dbName := config.Config("DB_NAME", DbDefault)
 
 	if err != nil {
 		log.Println("Port it is not a number!")
 	}
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=America/Sao_Paulo", config.Config("DB_HOST", "localhost"),
-		config.Config("DB_USERNAME", DB_DEFAULT), config.Config("DB_PASSWORD", DB_DEFAULT), config.Config("DB_NAME", DB_DEFAULT), dbPort)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPass, dbHost, dbPort, dbName)
 
-	DB, err = gorm.Open(postgres.Open(dsn))
+	DB, err = gorm.Open(mysql.Open(dsn))
 
 	if err != nil {
 		panic("Failed to connect to database")
 	}
 	fmt.Println("Connection Opened to Database")
 
-	err = DB.AutoMigrate(&model.Role{})
-	err = DB.AutoMigrate(&model.User{})
+	fmt.Println("Migrating database")
+
+	err = migrateModels()
 
 	if err != nil {
-		panic("Failed to migrate models")
+		log.Panicln("Failed to migrate models: " + err.Error())
 	}
+
 	fmt.Println("Database migrated")
 
+}
+
+func migrateModels() error {
+	err := DB.AutoMigrate(&model.Address{})
+	if err != nil {
+		return err
+	}
+
+	err = DB.AutoMigrate(&model.User{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

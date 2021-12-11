@@ -2,18 +2,23 @@ package main
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"vcsxsantos/nagini-api/config"
-	"vcsxsantos/nagini-api/database"
-	"vcsxsantos/nagini-api/router"
+	"gitlab.com/vinicius.csantos/nagini-api/config"
+	"gitlab.com/vinicius.csantos/nagini-api/database"
+	"gitlab.com/vinicius.csantos/nagini-api/router"
+	"log"
 )
 
 func main() {
 	app := fiber.New()
-	appPort := config.Config("APPLICATION_PORT", "8000")
+	appPort := config.Config("APPLICATION_PORT", "5000")
 
 	database.ConnectDB()
 
 	router.SetupRoutes(app)
 
-	app.Listen(":" + appPort)
+	err := app.Listen(":" + appPort)
+
+	if err != nil {
+		log.Panicln(err.Error())
+	}
 }

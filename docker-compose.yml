@@ -1,15 +1,16 @@
 version: '3'
 services:
-  postgres_dev:
-    image: postgres:14.0
+  mysql_dev:
+    image: mysql:5.7
     environment:
-      - POSTGRES_DB=nagini-api
-      - POSTGRES_USER=nagini-api
-      - POSTGRES_PASSWORD=nagini-api
+      - MYSQL_ROOT_PASSWORD=nagini-api
+      - MYSQL_DATABASE=nagini-api
+      - MYSQL_USER=nagini-api
+      - MYSQL_PASSWORD=nagini-api
     expose:
-      - '5532'
+      - '3306'
     ports:
-      - '5532:5432'
+      - '3306:3306'
   postgresql:
     image: docker.io/bitnami/postgresql:13
     volumes:

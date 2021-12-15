@@ -24,10 +24,15 @@ const (
 	StatusInternalServerError = "internal_server_error"
 	StatusNotFound            = "not_found"
 	StatusBadRequest          = "bad_request"
+
+	//ROUTES
+
 	PathUserIdParam           = "/:userId"
+	PathAddressIdParam        = "/:addressId"
+	PathUpdateUserMainAddress = "/:addressId/address/:userId/user"
 
 	//CONDITIONS
 
 	IdCondition = "id = ?"
-
+	UserIdCondition = "user_id = ?"
 )

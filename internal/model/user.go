@@ -23,9 +23,9 @@ type User struct {
 	CpfCNPJ      string `gorm:"index;unique;not null;"`
 	Password     string `gorm:"not null;"`
 	Birthdate    string
-	PhoneNumber  string   `gorm:"unique;not null;"`
-	Role         UserRole `gorm:"not null;"`
-	Address      []Address
+	PhoneNumber  string    `gorm:"unique;not null;"`
+	Role         UserRole  `gorm:"not null;"`
+	Address      []Address `gorm:"foreignKey:UserID"`
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -51,7 +51,6 @@ type UpdateUser struct {
 	Birthdate    string
 	PhoneNumber  string
 	Role         UserRole
-	Address      []Address
 }
 
 type Authentication struct {
@@ -66,7 +65,7 @@ type Token struct {
 	TokenString string `json:"token"`
 }
 
-func CheckIfEntityIsValid(user *User) (bool, string) {
+func CheckIfUserEntityIsValid(user *User) (bool, string) {
 
 	if user.UserFullName == "" {
 		return false, "UserFullName"
@@ -125,9 +124,13 @@ func PrepareUserToUpdate(user *User, updateUserData *UpdateUser) *User {
 	if updateUserData.Birthdate != "" {
 		user.Birthdate = updateUserData.Birthdate
 	}
-	if updateUserData.Address != nil {
-		user.Address = updateUserData.Address
+	if updateUserData.PhoneNumber != "" {
+		user.PhoneNumber = stringUtil.RemoveSpecialCharacters(updateUserData.PhoneNumber)
 	}
 
 	return user
+}
+
+func MessageUser(genericMessage string) string {
+	return stringUtil.FormatGenericMessagesString(genericMessage, "User")
 }

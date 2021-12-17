@@ -30,14 +30,16 @@ func GetUsers(c *fiber.Ctx) error {
 	}
 
 	for _, user := range users {
-		err = db.Find(&userAddress, constants.UserIdCondition, user.ID).Error
+		userAddress, err = getUserAddresses(c, user.ID)
 
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+			return err
 		}
+
 		if len(userAddress) != 0 {
 			user.Address = userAddress
 		}
+
 		readUsers = append(readUsers, model.EntityToReadUser(user))
 	}
 
@@ -64,14 +66,17 @@ func GetUser(c *fiber.Ctx) error {
 	}
 
 	for _, user := range user {
-		err = db.Find(&userAddress, constants.UserIdCondition, user.ID).Error
+
+		userAddress, err = getUserAddresses(c, user.ID)
 
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+			return err
 		}
+
 		if len(userAddress) != 0 {
 			user.Address = userAddress
 		}
+
 		readUser = append(readUser, model.EntityToReadUser(user))
 	}
 
@@ -275,4 +280,17 @@ func DeleteUser(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusNoContent).JSON(fiber.Map{})
+}
+
+func getUserAddresses(c *fiber.Ctx,  userId uuid.UUID) ([]model.Address, error) {
+	db := database.DB
+	var userAddress []model.Address
+
+	err := db.Find(&userAddress, constants.UserIdCondition, userId).Error
+
+	if err != nil {
+		return nil, c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	return userAddress, nil
 }

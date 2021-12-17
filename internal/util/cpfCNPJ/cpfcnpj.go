@@ -42,7 +42,7 @@ func validateFirstCpfDigit(cpf string) bool {
 	}
 
 	result = result * 10 % 11
-	if result == 10 {
+	if result >= 10 {
 		result = 0
 	}
 

@@ -11,6 +11,7 @@ import (
 	"gitlab.com/vinicius.csantos/nagini-api/internal/util/jwt"
 	stringUtil "gitlab.com/vinicius.csantos/nagini-api/internal/util/string"
 	"net/mail"
+	"time"
 )
 
 func GetUsers(c *fiber.Ctx) error {
@@ -128,6 +129,9 @@ func Login(c *fiber.Ctx) error {
 	var token model.Token
 	token.Login = login
 	token.CpfCNPJ = stringUtil.RemoveSpecialCharacters(user.CpfCNPJ)
+	token.UserID = user.ID
+	token.Username = user.Username
+	token.Expiration = time.Now().Add(time.Hour * 1)
 	token.TokenString = validToken
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": constants.StatusSuccess, "message": "Login with successful", "data": token})
@@ -179,7 +183,7 @@ func RegisterUser(c *fiber.Ctx) error {
 			columnAlreadyExists = "phoneNumber"
 		}
 
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"status": constants.StatusConflict, "message": "This " + columnAlreadyExists + " already exists on our database", "data": nil})
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"status": constants.StatusConflict, "message": stringUtil.FormatGenericMessagesString(constants.GenericAlreadyExistsMessage, columnAlreadyExists), "data": nil})
 	}
 
 	if !cpfCNPJ.ValidateCpfCNPJ(formattedCpfCNPJ) {
@@ -246,7 +250,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	err = db.Save(&user).Error
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericUpdateErrorMessage), "data": err.Error()})
 	}
 
 	readUser = model.EntityToReadUser(user)
@@ -276,13 +280,13 @@ func DeleteUser(c *fiber.Ctx) error {
 	err = db.Delete(&user).Error
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericDeleteErrorMessage), "data": err.Error()})
 	}
 
 	return c.Status(fiber.StatusNoContent).JSON(fiber.Map{})
 }
 
-func getUserAddresses(c *fiber.Ctx,  userId uuid.UUID) ([]model.Address, error) {
+func getUserAddresses(c *fiber.Ctx, userId uuid.UUID) ([]model.Address, error) {
 	db := database.DB
 	var userAddress []model.Address
 

@@ -185,7 +185,7 @@ func UpdateAddress(c *fiber.Ctx) error {
 	err = db.Save(address).Error
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": constants.GenericInternalServerErrorMessage, "data": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": constants.GenericUpdateErrorMessage, "data": err.Error()})
 	}
 
 	return c.JSON(fiber.Map{"status": constants.StatusSuccess, "message": model.MessageAddress(constants.GenericFoundSuccessMessage), "data": address})
@@ -210,7 +210,7 @@ func DeleteAddress(c *fiber.Ctx) error {
 	err = db.Delete(&address).Error
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": constants.GenericInternalServerErrorMessage, "data": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": constants.GenericDeleteErrorMessage, "data": err.Error()})
 	}
 
 	return c.Status(fiber.StatusNoContent).JSON(fiber.Map{})

@@ -10,7 +10,7 @@ const (
 	GenericCreateSuccessMessage       = "%_% created with successful"
 	GenericUpdateErrorMessage         = "It was not possible to update this %_%"
 	GenericUpdateSuccessMessage       = "%_% updated with successful"
-	GenericDeleteErrorMessage         = "It was not possible to update this %_%"
+	GenericDeleteErrorMessage         = "It was not possible to delete this %_%"
 	GenericInternalServerErrorMessage = "It was not possible to perform this action"
 	GenericInvalidFieldMessage        = "%_% cannot be null"
 	CpfCnpjInvalidMessage             = "This CPF or CNPJ is not valid!"

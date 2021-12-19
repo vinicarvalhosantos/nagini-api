@@ -60,9 +60,12 @@ type Authentication struct {
 }
 
 type Token struct {
-	Login       string `json:"login"`
-	CpfCNPJ     string `json:"cpfCnpj"`
-	TokenString string `json:"token"`
+	Login       string    `json:"login"`
+	CpfCNPJ     string    `json:"cpfCnpj"`
+	Username    string    `json:"username"`
+	UserID      uuid.UUID `json:"userId"`
+	Expiration  time.Time `json:"expirationTime"`
+	TokenString string    `json:"token"`
 }
 
 func CheckIfUserEntityIsValid(user *User) (bool, string) {

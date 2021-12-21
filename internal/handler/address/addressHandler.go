@@ -3,10 +3,10 @@ package address
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"gitlab.com/vinicius.csantos/nagini-api/database"
-	"gitlab.com/vinicius.csantos/nagini-api/internal/model"
-	constants "gitlab.com/vinicius.csantos/nagini-api/internal/util/constant"
-	stringUtil "gitlab.com/vinicius.csantos/nagini-api/internal/util/string"
+	"github.com/vinicius.csantos/nagini-api/database"
+	"github.com/vinicius.csantos/nagini-api/internal/model"
+	constants "github.com/vinicius.csantos/nagini-api/internal/util/constant"
+	stringUtil "github.com/vinicius.csantos/nagini-api/internal/util/string"
 )
 
 func GetAddresses(c *fiber.Ctx) error {

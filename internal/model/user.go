@@ -2,8 +2,8 @@ package model
 
 import (
 	"github.com/google/uuid"
-	"gitlab.com/vinicius.csantos/nagini-api/internal/util/encrypt"
-	stringUtil "gitlab.com/vinicius.csantos/nagini-api/internal/util/string"
+	"github.com/vinicius.csantos/nagini-api/internal/util/encrypt"
+	stringUtil "github.com/vinicius.csantos/nagini-api/internal/util/string"
 	"time"
 )
 

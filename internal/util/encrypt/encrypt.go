@@ -4,7 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
-	"gitlab.com/vinicius.csantos/nagini-api/config"
+	"github.com/vinicius.csantos/nagini-api/config"
 	"golang.org/x/crypto/bcrypt"
 	"net/url"
 )

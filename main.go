@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"gitlab.com/vinicius.csantos/nagini-api/config"
-	"gitlab.com/vinicius.csantos/nagini-api/database"
-	"gitlab.com/vinicius.csantos/nagini-api/router"
+	"github.com/vinicius.csantos/nagini-api/config"
+	"github.com/vinicius.csantos/nagini-api/database"
+	"github.com/vinicius.csantos/nagini-api/router"
 	"log"
 )
 

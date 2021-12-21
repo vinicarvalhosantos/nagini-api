@@ -1,0 +1,8 @@
+sonar.projectKey=nagini-api
+sonar.projectName=nagini-api
+sonar.sources=./internal
+sonar.host.url=http://localhost:9000
+sonar.login=ExampleLoginToken
+sonar.go.exclusions=**_test.go**,**/route/**,**/**constant.go
+sonar.go.coverage.reportPaths=coverage.out
+sonar.go.tests.reportPaths=test-report.out

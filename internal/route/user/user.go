@@ -2,10 +2,10 @@ package userRoutes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	userHandler "gitlab.com/vinicius.csantos/nagini-api/internal/handler/user"
-	authRoutes "gitlab.com/vinicius.csantos/nagini-api/internal/route/user/auth"
-	constants "gitlab.com/vinicius.csantos/nagini-api/internal/util/constant"
-	"gitlab.com/vinicius.csantos/nagini-api/internal/util/jwt"
+	userHandler "github.com/vinicius.csantos/nagini-api/internal/handler/user"
+	authRoutes "github.com/vinicius.csantos/nagini-api/internal/route/user/auth"
+	constants "github.com/vinicius.csantos/nagini-api/internal/util/constant"
+	"github.com/vinicius.csantos/nagini-api/internal/util/jwt"
 )
 
 func SetupUserRoutes(router fiber.Router) {

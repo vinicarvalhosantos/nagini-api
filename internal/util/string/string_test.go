@@ -2,7 +2,7 @@ package string
 
 import (
 	"github.com/stretchr/testify/assert"
-	constants "gitlab.com/vinicius.csantos/nagini-api/internal/util/constant"
+	constants "github.com/vinicius.csantos/nagini-api/internal/util/constant"
 	"testing"
 )
 

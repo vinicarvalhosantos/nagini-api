@@ -2,9 +2,9 @@ package addressRoutes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"gitlab.com/vinicius.csantos/nagini-api/internal/handler/address"
-	constantUtils "gitlab.com/vinicius.csantos/nagini-api/internal/util/constant"
-	"gitlab.com/vinicius.csantos/nagini-api/internal/util/jwt"
+	"github.com/vinicius.csantos/nagini-api/internal/handler/address"
+	constantUtils "github.com/vinicius.csantos/nagini-api/internal/util/constant"
+	"github.com/vinicius.csantos/nagini-api/internal/util/jwt"
 )
 
 func SetupAddressRoutes(router fiber.Router) {

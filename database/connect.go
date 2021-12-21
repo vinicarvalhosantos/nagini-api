@@ -2,8 +2,8 @@ package database
 
 import (
 	"fmt"
-	"gitlab.com/vinicius.csantos/nagini-api/config"
-	"gitlab.com/vinicius.csantos/nagini-api/internal/model"
+	"github.com/vinicius.csantos/nagini-api/config"
+	"github.com/vinicius.csantos/nagini-api/internal/model"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"

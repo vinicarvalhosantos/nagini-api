@@ -5,7 +5,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
 	jwtMiddleware "github.com/gofiber/jwt/v3"
-	"gitlab.com/vinicius.csantos/nagini-api/config"
+	"github.com/vinicius.csantos/nagini-api/config"
 	"time"
 )
 

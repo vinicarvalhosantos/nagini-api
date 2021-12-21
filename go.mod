@@ -1,4 +1,4 @@
-module gitlab.com/vinicius.csantos/nagini-api
+module github.com/vinicius.csantos/nagini-api
 
 go 1.17
 

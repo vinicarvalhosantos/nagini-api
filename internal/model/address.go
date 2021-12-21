@@ -2,7 +2,7 @@ package model
 
 import (
 	"github.com/google/uuid"
-	stringUtil "gitlab.com/vinicius.csantos/nagini-api/internal/util/string"
+	stringUtil "github.com/vinicius.csantos/nagini-api/internal/util/string"
 	"time"
 )
 

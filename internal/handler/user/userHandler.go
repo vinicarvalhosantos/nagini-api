@@ -1,8 +1,12 @@
 package userHandler
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/ReneKroon/ttlcache/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"gitlab.com/vinicius.csantos/nagini-api/config"
 	"gitlab.com/vinicius.csantos/nagini-api/database"
 	"gitlab.com/vinicius.csantos/nagini-api/internal/model"
 	constants "gitlab.com/vinicius.csantos/nagini-api/internal/util/constant"
@@ -11,8 +15,13 @@ import (
 	"gitlab.com/vinicius.csantos/nagini-api/internal/util/jwt"
 	stringUtil "gitlab.com/vinicius.csantos/nagini-api/internal/util/string"
 	"net/mail"
+	"net/smtp"
+	"strings"
+	"text/template"
 	"time"
 )
+
+var UserCache ttlcache.SimpleCache = ttlcache.NewCache()
 
 func GetUsers(c *fiber.Ctx) error {
 	db := database.DB
@@ -206,7 +215,9 @@ func RegisterUser(c *fiber.Ctx) error {
 	}
 	readUser = model.EntityToReadUser(newUser)
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"status": constants.StatusSuccess, "message": model.MessageUser(constants.GenericCreateSuccessMessage), "data": readUser})
+	err = sendEmailToConfirmAccount(newUser.Email, newUser.Username, newUser.CpfCNPJ, newUser.ID)
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"status": constants.StatusSuccess, "message": model.MessageUser(constants.GenericUserCreatedSuccessMessage), "data": readUser})
 }
 
 func UpdateUser(c *fiber.Ctx) error {
@@ -286,6 +297,56 @@ func DeleteUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusNoContent).JSON(fiber.Map{})
 }
 
+func ConfirmEmail(c *fiber.Ctx) error {
+	db := database.DB
+	var user *model.User
+
+	token := c.Params("userToken")
+
+	tokenDecrypted, err := encrypt.UrlDecrypt(token)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	tokenFields := strings.Split(tokenDecrypted, "$")
+
+	email := tokenFields[0]
+
+	err = db.Find(&user, "email = ?", email).Error
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	userToken, err := UserCache.Get(user.ID.String())
+
+	if userToken == tokenDecrypted {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": constants.StatusBadRequest, "message": constants.GenericTokenDoesNotMatch, "data": nil})
+	}
+
+	if err != nil {
+		if err == ttlcache.ErrNotFound {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"status": constants.StatusForbidden, "message": model.MessageUser(constants.GenericCacheForbiddenMessage), "data": err.Error()})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	if user.ID == uuid.Nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": constants.StatusNotFound, "message": model.MessageUser(constants.GenericNotFoundMessage), "data": nil})
+	}
+
+	err = db.Model(&model.User{}).Where(constants.IdCondition, user.ID).Update("email_verified", true).Error
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	UserCache.Remove(user.ID.String())
+
+	return c.Status(fiber.StatusNoContent).JSON(fiber.Map{})
+}
+
 func getUserAddresses(c *fiber.Ctx, userId uuid.UUID) ([]model.Address, error) {
 	db := database.DB
 	var userAddress []model.Address
@@ -297,4 +358,75 @@ func getUserAddresses(c *fiber.Ctx, userId uuid.UUID) ([]model.Address, error) {
 	}
 
 	return userAddress, nil
+}
+
+func sendEmailToConfirmAccount(email, username, cpfCNPJ string, userID uuid.UUID) error {
+
+	stringToEncrypt := fmt.Sprintf("%s$%s$%s", email, username, cpfCNPJ)
+
+	token, err := encrypt.UrlEncrypt(stringToEncrypt)
+
+	if err != nil {
+		return err
+	}
+	err = UserCache.SetTTL(30 * time.Minute)
+
+	if err != nil {
+		return err
+	}
+
+	baseWebUrl := config.Config("WEB_URL", "localhost:5000")
+
+	accountConfirmationUrl := fmt.Sprintf("%s/%s/%s", baseWebUrl, "confirm-account", token)
+
+	err = UserCache.Set(userID.String(), token)
+
+	if err != nil {
+		return err
+	}
+
+	err = createEmail(email, username, accountConfirmationUrl)
+
+	return err
+}
+
+func createEmail(email, username, urlToActive string) error {
+
+	from := config.Config("EMAIL_SEND", "")
+	password := config.Config("EMAIL_PASSWORD", "")
+
+	to := []string{
+		email,
+	}
+
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+
+	auth := smtp.PlainAuth("", from, password, smtpHost)
+
+	templatePath := config.Config("EMAIL_TEMPLATE_PATH", "")
+
+	emailTemplate, _ := template.ParseFiles(templatePath)
+
+	var body bytes.Buffer
+
+	mimeHeaders := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+	body.Write([]byte(fmt.Sprintf("Subject: Email Confirmation! \n%s\n\n", mimeHeaders)))
+
+	err := emailTemplate.Execute(&body, struct {
+		Username    string
+		ActivateUrl string
+	}{
+		Username:    username,
+		ActivateUrl: urlToActive,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, body.Bytes())
+
+	return err
 }

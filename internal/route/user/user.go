@@ -19,6 +19,8 @@ func SetupUserRoutes(router fiber.Router) {
 	user.Put(constants.PathUserIdParam, jwt.Protected(), userHandler.UpdateUser)
 	//Delete User
 	user.Delete(constants.PathUserIdParam, jwt.Protected(), userHandler.DeleteUser)
+	//Confirm Email Account
+	user.Patch("/confirm/:userToken", userHandler.ConfirmEmail)
 
 	//Register Route
 	authRoutes.SetupRegisterRoute(user)

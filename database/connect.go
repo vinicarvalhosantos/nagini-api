@@ -29,8 +29,6 @@ func ConnectDB() {
 		log.Println("Port it is not a number!")
 	}
 
-	//textToToken := "$viniciuscarvalhomine@gmail.com$zvinniie$44611032850$" + time.Now().Add(time.Hour * 1).String()
-
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPass, dbHost, dbPort, dbName)
 
 	DB, err = gorm.Open(mysql.Open(dsn))

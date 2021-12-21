@@ -16,18 +16,19 @@ const (
 )
 
 type User struct {
-	ID           uuid.UUID
-	Username     string `gorm:"index;unique;not null;"`
-	UserFullName string `gorm:"not null;"`
-	Email        string `gorm:"index;unique;not null;"`
-	CpfCNPJ      string `gorm:"index;unique;not null;"`
-	Password     string `gorm:"not null;"`
-	Birthdate    string
-	PhoneNumber  string    `gorm:"unique;not null;"`
-	Role         UserRole  `gorm:"not null;"`
-	Address      []Address `gorm:"foreignKey:UserID"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID            uuid.UUID
+	Username      string `gorm:"index;unique;not null;"`
+	UserFullName  string `gorm:"not null;"`
+	Email         string `gorm:"index;unique;not null;"`
+	EmailVerified bool   `gorm:"default false;"`
+	CpfCNPJ       string `gorm:"index;unique;not null;"`
+	Password      string `gorm:"not null;"`
+	Birthdate     string
+	PhoneNumber   string    `gorm:"unique;not null;"`
+	Role          UserRole  `gorm:"not null;"`
+	Address       []Address `gorm:"foreignKey:UserID"`
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type ReadUser struct {

@@ -39,4 +39,9 @@ const (
 
 	IdCondition     = "id = ?"
 	UserIdCondition = "user_id = ?"
+	EmailCondition = "email = ?"
+
+	//URL
+	GeneralUrlFormat = "%s/%s/%s"
+
 )

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/ReneKroon/ttlcache/v2"
 	"github.com/google/uuid"
 	"github.com/vinicius.csantos/nagini-api/internal/util/encrypt"
 	stringUtil "github.com/vinicius.csantos/nagini-api/internal/util/string"
@@ -8,6 +9,8 @@ import (
 )
 
 type UserRole string
+
+var UserCache ttlcache.SimpleCache = ttlcache.NewCache()
 
 const (
 	Admin   UserRole = "admin"
@@ -52,6 +55,14 @@ type UpdateUser struct {
 	Birthdate    string
 	PhoneNumber  string
 	Role         UserRole
+}
+
+type RecoverPassword struct {
+	CpfCNPJ string
+}
+
+type ChangePassword struct {
+	NewPassword string
 }
 
 type Authentication struct {

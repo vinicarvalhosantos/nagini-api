@@ -1,13 +1,12 @@
 package userHandler
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/ReneKroon/ttlcache/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/vinicius.csantos/nagini-api/config"
 	"github.com/vinicius.csantos/nagini-api/database"
+	"github.com/vinicius.csantos/nagini-api/internal/handler/email"
 	"github.com/vinicius.csantos/nagini-api/internal/model"
 	constants "github.com/vinicius.csantos/nagini-api/internal/util/constant"
 	"github.com/vinicius.csantos/nagini-api/internal/util/cpfCNPJ"
@@ -15,13 +14,9 @@ import (
 	"github.com/vinicius.csantos/nagini-api/internal/util/jwt"
 	stringUtil "github.com/vinicius.csantos/nagini-api/internal/util/string"
 	"net/mail"
-	"net/smtp"
 	"strings"
-	"text/template"
 	"time"
 )
-
-var UserCache ttlcache.SimpleCache = ttlcache.NewCache()
 
 func GetUsers(c *fiber.Ctx) error {
 	db := database.DB
@@ -108,7 +103,7 @@ func Login(c *fiber.Ctx) error {
 	var login string
 
 	if auth.Email != "" {
-		condition += "email = ?"
+		condition += constants.EmailCondition
 		login = auth.Email
 	}
 
@@ -215,7 +210,7 @@ func RegisterUser(c *fiber.Ctx) error {
 	}
 	readUser = model.EntityToReadUser(newUser)
 
-	err = sendEmailToConfirmAccount(newUser.Email, newUser.Username, newUser.CpfCNPJ, newUser.ID)
+	err = email.SendEmailToConfirmAccount(newUser.Email, newUser.Username, newUser.CpfCNPJ, newUser.ID)
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"status": constants.StatusSuccess, "message": model.MessageUser(constants.GenericUserCreatedSuccessMessage), "data": readUser})
 }
@@ -298,42 +293,32 @@ func DeleteUser(c *fiber.Ctx) error {
 }
 
 func ConfirmEmail(c *fiber.Ctx) error {
+	userCache := model.UserCache
 	db := database.DB
-	var user *model.User
 
 	token := c.Params("userToken")
 
-	tokenDecrypted, err := encrypt.UrlDecrypt(token)
+	tokenFields, tokenDecrypted, err := getTokenFields(c, token)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+		return err
 	}
 
-	tokenFields := strings.Split(tokenDecrypted, "$")
+	userEmail := tokenFields[0]
 
-	email := tokenFields[0]
-
-	err = db.Find(&user, "email = ?", email).Error
+	user, err := findUserByEmail(c, userEmail)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+		return err
 	}
 
-	userToken, err := UserCache.Get(user.ID.String())
+	timeEncrypted := tokenFields[3]
+	cacheKey := getCacheKey(user, timeEncrypted)
 
-	if userToken == tokenDecrypted {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": constants.StatusBadRequest, "message": constants.GenericTokenDoesNotMatch, "data": nil})
-	}
+	err = validateUserToken(c, cacheKey, tokenDecrypted)
 
 	if err != nil {
-		if err == ttlcache.ErrNotFound {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"status": constants.StatusForbidden, "message": model.MessageUser(constants.GenericCacheForbiddenMessage), "data": err.Error()})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
-	}
-
-	if user.ID == uuid.Nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": constants.StatusNotFound, "message": model.MessageUser(constants.GenericNotFoundMessage), "data": nil})
+		return err
 	}
 
 	err = db.Model(&model.User{}).Where(constants.IdCondition, user.ID).Update("email_verified", true).Error
@@ -342,9 +327,98 @@ func ConfirmEmail(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
 	}
 
-	UserCache.Remove(user.ID.String())
+	userCache.Remove(cacheKey)
 
 	return c.Status(fiber.StatusNoContent).JSON(fiber.Map{})
+}
+
+func RecoverPasswordRequest(c *fiber.Ctx) error {
+	db := database.DB
+	var user *model.User
+	var recoverPasswordRequest *model.RecoverPassword
+
+	err := c.BodyParser(&recoverPasswordRequest)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	formattedCpfCnpj := stringUtil.RemoveSpecialCharacters(recoverPasswordRequest.CpfCNPJ)
+
+	err = db.Find(&user, "cpf_cnpj = ?", formattedCpfCnpj).Error
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	if user.ID != uuid.Nil {
+
+		err = email.SendEmailToRecoverPassword(user.Email, user.Username, formattedCpfCnpj, user.ID)
+
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+		}
+
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": constants.StatusSuccess, "message": "An email with instructions to recover your password was sent to email registered if this Cpf or Cnpj exists in our database! ", "data": nil})
+}
+
+func ChangePassword(c *fiber.Ctx) error {
+	userCache := model.UserCache
+	db := database.DB
+	var changePasswordModel *model.ChangePassword
+
+	token := c.Params("userToken")
+
+	err := c.BodyParser(&changePasswordModel)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	tokenFields, tokenDecrypted, err := getTokenFields(c, token)
+
+	if err != nil {
+		return err
+	}
+
+	userEmail := tokenFields[0]
+
+	user, err := findUserByEmail(c, userEmail)
+
+	if err != nil {
+		return err
+	}
+
+	timeEncrypted := tokenFields[3]
+	cacheKey := getCacheKey(user, timeEncrypted)
+
+	err = validateUserToken(c, cacheKey, tokenDecrypted)
+
+	if err != nil {
+		return err
+	}
+
+	if changePasswordModel.NewPassword == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": constants.StatusBadRequest, "message": stringUtil.FormatGenericMessagesString(constants.GenericInvalidFieldMessage, "Password"), "data": nil})
+	}
+
+	newPassword, err := encrypt.HashPassword(changePasswordModel.NewPassword)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	err = db.Model(&model.User{}).Where(constants.IdCondition, user.ID).Update("password", newPassword).Error
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	userCache.Remove(cacheKey)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": constants.StatusSuccess, "message": "Your password was reset with successful!", "data": nil})
 }
 
 func getUserAddresses(c *fiber.Ctx, userId uuid.UUID) ([]model.Address, error) {
@@ -360,73 +434,52 @@ func getUserAddresses(c *fiber.Ctx, userId uuid.UUID) ([]model.Address, error) {
 	return userAddress, nil
 }
 
-func sendEmailToConfirmAccount(email, username, cpfCNPJ string, userID uuid.UUID) error {
+func validateUserToken(c *fiber.Ctx, cacheKey, tokenDecrypted string) error {
+	userCache := model.UserCache
+	userToken, err := userCache.Get(cacheKey)
 
-	stringToEncrypt := fmt.Sprintf("%s$%s$%s", email, username, cpfCNPJ)
-
-	token, err := encrypt.UrlEncrypt(stringToEncrypt)
-
-	if err != nil {
-		return err
-	}
-	err = UserCache.SetTTL(30 * time.Minute)
-
-	if err != nil {
-		return err
+	if userToken == tokenDecrypted {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": constants.StatusBadRequest, "message": constants.GenericTokenDoesNotMatch, "data": nil})
 	}
 
-	baseWebUrl := config.Config("WEB_URL", "localhost:5000")
-
-	accountConfirmationUrl := fmt.Sprintf("%s/%s/%s", baseWebUrl, "confirm-account", token)
-
-	err = UserCache.Set(userID.String(), token)
-
 	if err != nil {
-		return err
+		if err == ttlcache.ErrNotFound {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"status": constants.StatusForbidden, "message": model.MessageUser(constants.GenericCacheForbiddenMessage), "data": err.Error()})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
 	}
-
-	err = createEmail(email, username, accountConfirmationUrl)
-
-	return err
+	return nil
 }
 
-func createEmail(email, username, urlToActive string) error {
-
-	from := config.Config("EMAIL_SEND", "")
-	password := config.Config("EMAIL_PASSWORD", "")
-
-	to := []string{
-		email,
-	}
-
-	smtpHost := "smtp.gmail.com"
-	smtpPort := "587"
-
-	auth := smtp.PlainAuth("", from, password, smtpHost)
-
-	templatePath := config.Config("EMAIL_TEMPLATE_PATH", "")
-
-	emailTemplate, _ := template.ParseFiles(templatePath)
-
-	var body bytes.Buffer
-
-	mimeHeaders := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-
-	body.Write([]byte(fmt.Sprintf("Subject: Email Confirmation! \n%s\n\n", mimeHeaders)))
-
-	err := emailTemplate.Execute(&body, struct {
-		Username    string
-		ActivateUrl string
-	}{
-		Username:    username,
-		ActivateUrl: urlToActive,
-	})
+func getTokenFields(c *fiber.Ctx, token string) ([]string, string, error) {
+	tokenDecrypted, err := encrypt.UrlDecrypt(token)
 
 	if err != nil {
-		return err
+		return nil, "", c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
 	}
 
-	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, body.Bytes())
+	tokenFields := strings.Split(tokenDecrypted, "$")
 
-	return err
+	return tokenFields, tokenDecrypted, nil
+}
+
+func getCacheKey(user *model.User, timeEncrypted string) string {
+	return fmt.Sprintf("%s-%s", user.ID.String(), timeEncrypted)
+}
+
+func findUserByEmail(c *fiber.Ctx, userEmail string) (*model.User, error) {
+	var user *model.User
+	db := database.DB
+
+	err := db.Find(&user, constants.EmailCondition, userEmail).Error
+
+	if err != nil {
+		return nil, c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": constants.StatusInternalServerError, "message": model.MessageUser(constants.GenericInternalServerErrorMessage), "data": err.Error()})
+	}
+
+	if user.ID == uuid.Nil {
+		return nil, c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": constants.StatusNotFound, "message": model.MessageUser(constants.GenericNotFoundMessage), "data": nil})
+	}
+
+	return user, nil
 }
